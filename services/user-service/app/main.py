@@ -5,7 +5,7 @@ from fastapi import status as http_status
 from fastapi.responses import JSONResponse
 
 from app import database
-from app.routers import users
+from app.routers import auth, users
 
 
 @asynccontextmanager
@@ -19,12 +19,13 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title="User Service",
-    description="Microservice responsible for user management",
+    description="Microservice responsible for user management and authentication",
     version="1.0.0",
     lifespan=lifespan,
 )
 
 app.include_router(users.router)
+app.include_router(auth.router)
 
 
 @app.get("/")

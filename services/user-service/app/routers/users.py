@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.security.dependencies import require_role
 from app.schemas.user import UserCreate, UserResponse
 from app.services.user_service import (
     DuplicateUserError,
@@ -12,8 +13,14 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 
 def _user_response(user):
-    user["id"] = str(user.pop("_id"))
-    return user
+    return {
+        "id": str(user["_id"]),
+        "name": user["name"],
+        "email": user["email"],
+        "department": user.get("department"),
+        "role": user["role"],
+        "created_at": user["created_at"],
+    }
 
 
 @router.post(
@@ -33,7 +40,7 @@ def register_user(user_data: UserCreate):
 
 
 @router.get("")
-def get_users():
+def get_users(_: dict = Depends(require_role("admin"))):
     users = [_user_response(user) for user in get_all_users()]
     return {
         "message": "Get users endpoint is working",
@@ -42,7 +49,7 @@ def get_users():
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: str):
+def get_user(user_id: str, _: dict = Depends(require_role("admin"))):
     user = get_user_by_id(user_id)
     if user is None:
         raise HTTPException(

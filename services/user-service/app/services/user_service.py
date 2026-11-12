@@ -5,6 +5,7 @@ from pymongo.errors import DuplicateKeyError
 
 from app.database import get_users_collection
 from app.schemas.user import UserCreate
+from app.security.password import hash_password, verify_password
 
 
 class DuplicateUserError(Exception):
@@ -15,8 +16,10 @@ def create_user(user_data: UserCreate):
     collection = get_users_collection()
     user_document = {
         "name": user_data.name,
-        "email": user_data.email.lower().strip(),
+        "email": str(user_data.email).lower().strip(),
+        "password_hash": hash_password(user_data.password),
         "department": user_data.department,
+        "role": "employee",
         "created_at": datetime.now(timezone.utc),
     }
 
@@ -37,3 +40,15 @@ def get_user_by_id(user_id: str):
     if not ObjectId.is_valid(user_id):
         return None
     return get_users_collection().find_one({"_id": ObjectId(user_id)})
+
+
+def authenticate_user(email: str, password: str):
+    normalized_email = email.lower().strip()
+    user = get_users_collection().find_one({"email": normalized_email})
+    if user is None:
+        return None
+
+    password_hash = user.get("password_hash")
+    if not password_hash or not verify_password(password, password_hash):
+        return None
+    return user

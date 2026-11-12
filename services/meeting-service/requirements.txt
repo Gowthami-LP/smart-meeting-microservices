@@ -1,4 +1,5 @@
 fastapi
 uvicorn[standard]
-pymongo
+pymongo>=4.9,<5
 python-dotenv
+PyJWT
